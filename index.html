@@ -126,6 +126,9 @@ header h1{flex:1;font-size:17px;font-weight:700;letter-spacing:-.3px}
 <select id="ff" class="fs"><option value="">Fecha</option></select>
 <select id="fp" class="fs"><option value="">Packing List</option></select>
 </div>
+<div style="padding:4px 12px 8px;background:var(--c);border-bottom:1px solid var(--cb);flex-shrink:0;transition:background .3s">
+<input id="fk" type="text" inputmode="search" placeholder="Buscar packing (ej: 019)" style="width:100%;padding:9px 10px;border:1.5px solid var(--cb);border-radius:8px;font-size:13px;background:var(--bg);color:var(--ct);transition:background .3s,border-color .3s">
+</div>
 <div id="pbar" class="pb h"><span id="bpk"></span><span id="bcn"></span></div>
 <div id="plist" class="pl"><div class="em">Sube un archivo Excel para comenzar</div></div>
 <div id="bbar" class="bb h">
@@ -170,7 +173,7 @@ let savedOrder=JSON.parse(localStorage.getItem(LS_KEY)||'[]');
 const $=id=>document.getElementById(id);
 const scrUp=$('scr-up'),scrMain=$('scr-main'),scrReord=$('scr-reord');
 const fi=$('fi'),finf=$('finf'),ld=$('ld');
-const ft=$('ft'),ff=$('ff'),fp=$('fp');
+const ft=$('ft'),ff=$('ff'),fp=$('fp'),fk=$('fk');
 const pbar=$('pbar'),plist=$('plist'),bbar=$('bbar');
 const rlist=$('rlist'),tst=$('tst');
 
@@ -270,13 +273,27 @@ OO=[...O];uB();rP()}
 ft.addEventListener('change',()=>{const t=ft.value;const prevF=ff.value;const s=D.filter(d=>!t||d.trans===t);
 fS(ff,[...new Set(s.map(d=>d.fec).filter(Boolean))].sort().reverse(),'Fecha');
 if(prevF&&[...new Set(s.map(d=>d.fec))].includes(prevF))ff.value=prevF;
-fS(fp,[...new Set(s.map(d=>d.pk).filter(Boolean))].sort().reverse(),'Packing List');aF()});
+const f2=ff.value;const s2=s.filter(d=>!f2||d.fec===f2);
+let pkList=[...new Set(s2.map(d=>d.pk).filter(Boolean))].sort().reverse();
+const q=fk.value.trim().toLowerCase();if(q)pkList=pkList.filter(p=>p.toLowerCase().includes(q));
+fS(fp,pkList,'Packing List');if(pkList.length===1)fp.value=pkList[0];aF()});
 
 ff.addEventListener('change',()=>{const t=ft.value,f=ff.value;
 const s=D.filter(d=>(t?d.trans===t:true)&&(f?d.fec===f:true));
-fS(fp,[...new Set(s.map(d=>d.pk).filter(Boolean))].sort().reverse(),'Packing List');aF()});
+let pkList=[...new Set(s.map(d=>d.pk).filter(Boolean))].sort().reverse();
+const q=fk.value.trim().toLowerCase();if(q)pkList=pkList.filter(p=>p.toLowerCase().includes(q));
+fS(fp,pkList,'Packing List');if(pkList.length===1)fp.value=pkList[0];aF()});
 
 fp.addEventListener('change',aF);
+
+fk.addEventListener('input',()=>{
+const t=ft.value,f=ff.value,q=fk.value.trim().toLowerCase();
+const s=D.filter(d=>{if(t&&d.trans!==t)return false;if(f&&d.fec!==f)return false;return true});
+const allPk=[...new Set(s.map(d=>d.pk).filter(Boolean))].sort().reverse();
+const matchPk=q?allPk.filter(p=>p.toLowerCase().includes(q)):allPk;
+fS(fp,matchPk,'Packing List');
+if(matchPk.length===1)fp.value=matchPk[0];
+aF()});
 
 function uB(){if(!O.length){pbar.classList.add('h');bbar.classList.add('h');return}
 const pk=fp.value||'-';const tot=O.reduce((s,p)=>s+p.cant,0);
