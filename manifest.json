@@ -1,7 +1,7 @@
 ﻿{
   "name": "Lotes Preview",
   "short_name": "Lotes",
-  "start_url": "./visor-lotes.html",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
