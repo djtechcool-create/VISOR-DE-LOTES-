@@ -1,8 +1,8 @@
 ﻿{
   "name": "Lotes Preview",
   "short_name": "Lotes",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "https://djtechcool-create.github.io/VISOR-DE-LOTES-/",
+  "scope": "https://djtechcool-create.github.io/VISOR-DE-LOTES-/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f172a",
