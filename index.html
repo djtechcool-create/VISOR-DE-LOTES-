@@ -247,7 +247,7 @@ function fS(s,v,ph){s.innerHTML=`<option value="">${ph}</option>`;v.forEach(x=>{
 function aF(){
 const t=ft.value,f=ff.value,p=fp.value;
 F=D.filter(d=>{if(t&&d.trans!==t)return false;if(f&&d.fec!==f)return false;if(p&&d.pk!==p)return false;return true});
-const g={};F.forEach(d=>{const k=d.cod;if(!g[k])g[k]={...d,cant:0};g[k].cant+=d.cant;g[k].lot=d.lot});
+const g={};F.forEach(d=>{const k=d.cod+'||'+d.lot;if(!g[k])g[k]={...d,cant:0};g[k].cant+=d.cant});
 const ni=Object.values(g);
 savedOrder=JSON.parse(localStorage.getItem(LS_KEY)||'[]');
 if(savedOrder.length>0){
@@ -258,7 +258,10 @@ const fullOrder=savedOrder.map(k=>allMap[k]).filter(Boolean);
 allProducts.forEach(i=>{if(!fullOrder.find(x=>x.cod===i.cod))fullOrder.push(i)});
 allProducts=fullOrder;
 O=ni.filter(i=>fullOrder.some(x=>x.cod===i.cod));
-O.sort((a,b)=>fullOrder.findIndex(x=>x.cod===a.cod)-fullOrder.findIndex(x=>x.cod===b.cod));
+O.sort((a,b)=>{
+const ai=fullOrder.findIndex(x=>x.cod===a.cod);
+const bi=fullOrder.findIndex(x=>x.cod===b.cod);
+return ai!==bi?ai-bi:a.lot.localeCompare(b.lot)});
 }else{
 allProducts=[...ni];
 O=[...ni]}
@@ -294,8 +297,7 @@ allProducts=newOrder;
 const keys=allProducts.map(i=>i.cod);
 localStorage.setItem(LS_KEY,JSON.stringify(keys));
 savedOrder=keys;
-const currentKeys=new Set(O.map(i=>i.cod));
-O=allProducts.filter(i=>currentKeys.has(i.cod));
+O.sort((a,b)=>allProducts.findIndex(x=>x.cod===a.cod)-allProducts.findIndex(x=>x.cod===b.cod));
 scrReord.classList.remove('on');rP();tS('Orden guardado')});
 $('btn-rst').addEventListener('click',()=>{if(!allProducts.length)return;localStorage.removeItem(LS_KEY);savedOrder=[];rRL();tS('Orden reiniciado')});
 
