@@ -117,6 +117,7 @@ header h1{flex:1;font-size:17px;font-weight:700;letter-spacing:-.3px}
 <button id="btn-theme" class="ib dm" title="Modo Oscuro"><svg id="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg><svg id="ico-moon" class="h" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
 <button id="btn-install" class="ib h" title="Instalar App"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
 <button id="btn-reord" class="ib ac" title="Reordenar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="16" y2="12"/><line x1="4" y1="18" x2="12" y2="18"/></svg></button>
+<button id="btn-search" class="ib" title="Buscar Packing" style="background:rgba(255,255,255,.1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
 </header>
 <div class="fil">
 <select id="ft" class="fs"><option value="">Transportista</option></select>
@@ -140,6 +141,22 @@ header h1{flex:1;font-size:17px;font-weight:700;letter-spacing:-.3px}
 <p class="rh">Mantén presionado y arrastra para cambiar el orden</p>
 <div id="rlist" class="rl"></div>
 <div class="rf"><button id="btn-done" class="bar pr fw">Listo</button></div>
+</div>
+
+<div id="scr-search" class="scr ms">
+<header>
+<button id="btn-close-search" class="ib" title="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+<h1>Buscar Packing</h1>
+<div style="width:38px"></div>
+</header>
+<div style="padding:14px 12px;background:var(--c);border-bottom:1px solid var(--cb);flex-shrink:0">
+<label style="font-size:12px;font-weight:600;color:var(--cts);display:block;margin-bottom:6px">Producto</label>
+<select id="search-prod" class="fs" style="width:100%;margin-bottom:10px"><option value="">Seleccionar producto...</option></select>
+<label style="font-size:12px;font-weight:600;color:var(--cts);display:block;margin-bottom:6px">Cantidad</label>
+<input id="search-cant" type="number" inputmode="numeric" placeholder="Ej: 2262" style="width:100%;padding:10px 8px;border:1.5px solid var(--cb);border-radius:8px;font-size:13px;background:var(--c);color:var(--ct)">
+<button id="btn-do-search" class="bar pr fw" style="margin-top:10px">Buscar</button>
+</div>
+<div id="search-results" class="pl"></div>
 </div>
 
 <div id="tst" class="tst h"></div>
@@ -318,6 +335,41 @@ $('btn-ct').addEventListener('click',()=>{if(!O.length)return;const h='Orden\tPr
 
 function cT(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>tS('Copiado'))}else{const a=document.createElement('textarea');a.value=t;a.style.cssText='position:fixed;left:-9999px';document.body.appendChild(a);a.select();document.execCommand('copy');document.body.removeChild(a);tS('Copiado')}}
 function tS(m){tst.textContent=m;tst.classList.remove('h');clearTimeout(tst._t);tst._t=setTimeout(()=>tst.classList.add('h'),1800)}
+
+// SEARCH
+const scrSearch=$('scr-search'),searchProd=$('search-prod'),searchCant=$('search-cant'),searchResults=$('search-results');
+$('btn-search').addEventListener('click',()=>{
+if(!D.length){tS('Carga un Excel primero');return}
+const prods=[...new Set(D.map(d=>d.prod).filter(Boolean))].sort();
+searchProd.innerHTML='<option value="">Seleccionar producto...</option>';
+prods.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;searchProd.appendChild(o)});
+searchCant.value='';searchResults.innerHTML='<div class="em">Selecciona un producto y cantidad para buscar</div>';
+scrSearch.classList.add('on')});
+$('btn-close-search').addEventListener('click',()=>{scrSearch.classList.remove('on')});
+$('btn-do-search').addEventListener('click',()=>{
+const prod=searchProd.value;const cant=parseInt(searchCant.value);
+if(!prod){tS('Selecciona un producto');return}
+if(!cant){tS('Ingresa una cantidad');return}
+const pkGroups={};
+D.forEach(d=>{if(d.prod!==prod)return;if(!pkGroups[d.pk])pkGroups[d.pk]={transportista:d.trans,fecha:d.fec,items:{}};
+const k=d.lot;if(!pkGroups[d.pk].items[k])pkGroups[d.pk].items[k]={lot:k,cant:0};
+pkGroups[d.pk].items[k].cant+=d.cant});
+const matches=[];
+Object.entries(pkGroups).forEach(([pk,info])=>{
+const items=Object.values(info.items);
+const total=items.reduce((s,i)=>s+i.cant,0);
+const exactMatch=items.find(i=>i.cant===cant);
+const partialItems=items.filter(i=>String(i.cant).includes(String(cant)));
+if(exactMatch||partialItems.length>0||total===cant){
+matches.push({pk,transportista:info.transportista,fecha:info.fecha,items,exactItem:exactMatch,partialItems,total})}});
+if(matches.length===0){searchResults.innerHTML='<div class="em">No se encontraron packings con esa cantidad para este producto</div>';return}
+searchResults.innerHTML='';matches.forEach(m=>{
+const highlight=m.exactItem?'background:linear-gradient(135deg,var(--ok),#059669)':'background:linear-gradient(135deg,var(--acc),var(--acc2))';
+const matchInfo=m.exactItem?`Lote: ${m.exactItem.lot} = ${m.exactItem.cant.toLocaleString()}`:`Coincidencia parcial`;
+const c=document.createElement('div');c.className='pc';c.style.cursor='pointer';
+c.innerHTML=`<div class="pn" style="${highlight}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pi"><div class="pna">${m.pk}</div><div class="pq">${m.transportista} | ${m.fecha}</div><div class="pq" style="margin-top:2px">${matchInfo}</div><div class="pq">Total producto: <b>${m.total.toLocaleString()}</b></div></div>`;
+c.addEventListener('click',()=>{scrSearch.classList.remove('on');fp.value=m.pk;fp.dispatchEvent(new Event('change'))});
+searchResults.appendChild(c)})});
 </script>
 </body>
 </html>
