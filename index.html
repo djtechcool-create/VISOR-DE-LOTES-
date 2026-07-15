@@ -152,10 +152,8 @@ header h1{flex:1;font-size:17px;font-weight:700;letter-spacing:-.3px}
 <div style="width:38px"></div>
 </header>
 <div style="padding:14px 12px;background:var(--c);border-bottom:1px solid var(--cb);flex-shrink:0">
-<label style="font-size:12px;font-weight:600;color:var(--cts);display:block;margin-bottom:6px">Producto</label>
-<select id="search-prod" class="fs" style="width:100%;margin-bottom:10px"><option value="">Seleccionar producto...</option></select>
 <label style="font-size:12px;font-weight:600;color:var(--cts);display:block;margin-bottom:6px">Cantidad</label>
-<input id="search-cant" type="number" inputmode="numeric" placeholder="Ej: 2262" style="width:100%;padding:10px 8px;border:1.5px solid var(--cb);border-radius:8px;font-size:13px;background:var(--c);color:var(--ct)">
+<input id="search-cant" type="number" inputmode="numeric" placeholder="Escribe la cantidad..." style="width:100%;padding:10px 8px;border:1.5px solid var(--cb);border-radius:8px;font-size:13px;background:var(--c);color:var(--ct)">
 <button id="btn-do-search" class="bar pr fw" style="margin-top:10px">Buscar</button>
 </div>
 <div id="search-results" class="pl"></div>
@@ -358,37 +356,30 @@ function cT(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.
 function tS(m){tst.textContent=m;tst.classList.remove('h');clearTimeout(tst._t);tst._t=setTimeout(()=>tst.classList.add('h'),1800)}
 
 // SEARCH
-const scrSearch=$('scr-search'),searchProd=$('search-prod'),searchCant=$('search-cant'),searchResults=$('search-results');
+const scrSearch=$('scr-search'),searchCant=$('search-cant'),searchResults=$('search-results');
 $('btn-search').addEventListener('click',()=>{
 if(!D.length){tS('Carga un Excel primero');return}
-const prods=[...new Set(D.map(d=>d.prod).filter(Boolean))].sort();
-searchProd.innerHTML='<option value="">Seleccionar producto...</option>';
-prods.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;searchProd.appendChild(o)});
-searchCant.value='';searchResults.innerHTML='<div class="em">Selecciona un producto y cantidad para buscar</div>';
+searchCant.value='';searchResults.innerHTML='<div class="em">Escribe una cantidad para buscar packings</div>';
 scrSearch.classList.add('on')});
 $('btn-close-search').addEventListener('click',()=>{scrSearch.classList.remove('on')});
 $('btn-do-search').addEventListener('click',()=>{
-const prod=searchProd.value;const cant=parseInt(searchCant.value);
-if(!prod){tS('Selecciona un producto');return}
+const cant=parseInt(searchCant.value);
 if(!cant){tS('Ingresa una cantidad');return}
 const pkGroups={};
-D.forEach(d=>{if(d.prod!==prod)return;if(!pkGroups[d.pk])pkGroups[d.pk]={transportista:d.trans,fecha:d.fec,items:{}};
-const k=d.lot;if(!pkGroups[d.pk].items[k])pkGroups[d.pk].items[k]={lot:k,cant:0};
-pkGroups[d.pk].items[k].cant+=d.cant});
+D.forEach(d=>{if(!pkGroups[d.pk])pkGroups[d.pk]={transportista:d.trans,fecha:d.fec,products:{}};
+const p=d.prod;if(!pkGroups[d.pk].products[p])pkGroups[d.pk].products[p]={prod:p,lots:{}};
+const l=d.lot;if(!pkGroups[d.pk].products[p].lots[l])pkGroups[d.pk].products[p].lots[l]={lot:l,cant:0};
+pkGroups[d.pk].products[p].lots[l].cant+=d.cant});
 const matches=[];
 Object.entries(pkGroups).forEach(([pk,info])=>{
-const items=Object.values(info.items);
-const total=items.reduce((s,i)=>s+i.cant,0);
-const exactMatch=items.find(i=>i.cant===cant);
-const partialItems=items.filter(i=>String(i.cant).includes(String(cant)));
-if(exactMatch||partialItems.length>0||total===cant){
-matches.push({pk,transportista:info.transportista,fecha:info.fecha,items,exactItem:exactMatch,partialItems,total})}});
-if(matches.length===0){searchResults.innerHTML='<div class="em">No se encontraron packings con esa cantidad para este producto</div>';return}
+Object.values(info.products).forEach(prod=>{
+Object.values(prod.lots).forEach(lotInfo=>{
+if(lotInfo.cant===cant){
+matches.push({pk,transportista:info.transportista,fecha:info.fecha,prod:prod.prod,lot:lotInfo.lot,cant:lotInfo.cant}})})})});
+if(matches.length===0){searchResults.innerHTML='<div class="em">No se encontraron packings con cantidad '+cant.toLocaleString()+'</div>';return}
 searchResults.innerHTML='';matches.forEach(m=>{
-const highlight=m.exactItem?'background:linear-gradient(135deg,var(--ok),#059669)':'background:linear-gradient(135deg,var(--acc),var(--acc2))';
-const matchInfo=m.exactItem?`Lote: ${m.exactItem.lot} = ${m.exactItem.cant.toLocaleString()}`:`Coincidencia parcial`;
 const c=document.createElement('div');c.className='pc';c.style.cursor='pointer';
-c.innerHTML=`<div class="pn" style="${highlight}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pi"><div class="pna">${m.pk}</div><div class="pq">${m.transportista} | ${m.fecha}</div><div class="pq" style="margin-top:2px">${matchInfo}</div><div class="pq">Total producto: <b>${m.total.toLocaleString()}</b></div></div>`;
+c.innerHTML=`<div class="pn" style="background:linear-gradient(135deg,var(--ok),#059669)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pi"><div class="pna">${m.prod}</div><div class="pq">Packing: <b>${m.pk}</b></div><div class="pq">${m.transportista} | ${m.fecha}</div><div class="pq">Lote: ${m.lot} · Cant: <b>${m.cant.toLocaleString()}</b></div></div>`;
 c.addEventListener('click',()=>{scrSearch.classList.remove('on');fp.value=m.pk;fp.dispatchEvent(new Event('change'))});
 searchResults.appendChild(c)})});
 </script>
