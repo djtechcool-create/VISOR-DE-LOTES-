@@ -170,6 +170,7 @@ const LS_KEY='visor-lotes-orden';
 const LS_THEME='visor-lotes-theme';
 let D=[],F=[],O=[],OO=[],allProducts=[];
 let savedOrder=JSON.parse(localStorage.getItem(LS_KEY)||'[]');
+if(savedOrder.length>0&&savedOrder[0].includes('||')){savedOrder=[...new Set(savedOrder.map(k=>k.split('||')[0]))];localStorage.setItem(LS_KEY,JSON.stringify(savedOrder))}
 const $=id=>document.getElementById(id);
 const scrUp=$('scr-up'),scrMain=$('scr-main'),scrReord=$('scr-reord');
 const fi=$('fi'),finf=$('finf'),ld=$('ld');
