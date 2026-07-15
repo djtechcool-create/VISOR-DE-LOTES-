@@ -154,9 +154,17 @@ header h1{flex:1;font-size:17px;font-weight:700;letter-spacing:-.3px}
 <h1>Buscar Packing</h1>
 <div style="width:38px"></div>
 </header>
-<div style="padding:14px 12px;background:var(--c);border-bottom:1px solid var(--cb);flex-shrink:0;transition:background .3s">
+<div style="padding:10px 12px;background:var(--c);border-bottom:1px solid var(--cb);flex-shrink:0;display:flex;gap:4px;transition:background .3s">
+<button id="tab-pk" class="bar pr" style="flex:1;font-size:12px;padding:10px 4px">Por Número</button>
+<button id="tab-cant" class="bar" style="flex:1;font-size:12px;padding:10px 4px">Por Cantidad</button>
+</div>
+<div id="search-form-pk" style="padding:12px;background:var(--c);border-bottom:1px solid var(--cb);flex-shrink:0;transition:background .3s">
 <label style="font-size:12px;font-weight:600;color:var(--cts);display:block;margin-bottom:6px">Número de packing</label>
 <input id="search-pk" type="text" inputmode="search" placeholder="Escribe el número (ej: 019)" style="width:100%;padding:10px 8px;border:1.5px solid var(--cb);border-radius:8px;font-size:14px;background:var(--bg);color:var(--ct);transition:background .3s">
+</div>
+<div id="search-form-cant" style="padding:12px;background:var(--c);border-bottom:1px solid var(--cb);flex-shrink:0;display:none;transition:background .3s">
+<label style="font-size:12px;font-weight:600;color:var(--cts);display:block;margin-bottom:6px">Cantidad</label>
+<input id="search-cant" type="number" inputmode="numeric" placeholder="Escribe la cantidad..." style="width:100%;padding:10px 8px;border:1.5px solid var(--cb);border-radius:8px;font-size:14px;background:var(--bg);color:var(--ct);transition:background .3s">
 </div>
 <div id="search-results" class="pl"></div>
 </div>
@@ -366,31 +374,57 @@ function cT(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.
 function tS(m){tst.textContent=m;tst.classList.remove('h');clearTimeout(tst._t);tst._t=setTimeout(()=>tst.classList.add('h'),1800)}
 
 // SEARCH
-const scrSearch=$('scr-search'),searchPk=$('search-pk'),searchResults=$('search-results');
+const scrSearch=$('scr-search'),searchPk=$('search-pk'),searchCant=$('search-cant'),searchResults=$('search-results');
+const tabPk=$('tab-pk'),tabCant=$('tab-cant'),formPk=$('search-form-pk'),formCant=$('search-form-cant');
+let searchMode='pk';
+function showSearchForm(mode){
+searchMode=mode;
+tabPk.className=mode==='pk'?'bar pr':'bar';
+tabCant.className=mode==='cant'?'bar pr':'bar';
+formPk.style.display=mode==='pk'?'block':'none';
+formCant.style.display=mode==='cant'?'block':'none';
+searchResults.innerHTML='<div class="em">'+(mode==='pk'?'Escribe el número del packing':'Escribe la cantidad para buscar')+'</div>';}
+tabPk.addEventListener('click',()=>{showSearchForm('pk');searchPk.focus()});
+tabCant.addEventListener('click',()=>{showSearchForm('cant');searchCant.focus()});
+
+function renderSearchMatch(pk,info){
+const items=Object.values(info.items);
+const total=items.reduce((s,i)=>s+i.cant,0);
+const c=document.createElement('div');c.className='pc';c.style.cursor='pointer';
+c.innerHTML=`<div class="pn" style="background:linear-gradient(135deg,var(--ok),#059669)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pi"><div class="pna">${pk}</div><div class="pq">${info.transportista} | ${info.fecha}</div><div class="pq" style="margin-top:4px;font-size:11px;line-height:1.4">${items.map(i=>`${i.prod} · Lote ${i.lot} · <b>${i.cant.toLocaleString()}</b>`).join('<br>')}</div><div class="pq" style="margin-top:4px;font-weight:700">Total: ${total.toLocaleString()} un.</div></div>`;
+c.addEventListener('click',()=>{scrSearch.classList.remove('on');fp.value=pk;fp.dispatchEvent(new Event('change'))});
+searchResults.appendChild(c)}
+
 $('btn-search').addEventListener('click',()=>{
 if(!D.length){tS('Carga un Excel primero');return}
-searchPk.value='';searchResults.innerHTML='<div class="em">Escribe el número del packing</div>';
+searchPk.value='';searchCant.value='';showSearchForm('pk');
 scrSearch.classList.add('on');searchPk.focus()});
 $('btn-close-search').addEventListener('click',()=>{scrSearch.classList.remove('on')});
+
 searchPk.addEventListener('input',()=>{
 const q=searchPk.value.trim().toLowerCase();
 if(!q){searchResults.innerHTML='<div class="em">Escribe el número del packing</div>';return}
 const pkGroups={};
-D.forEach(d=>{
-if(!d.pk.toLowerCase().includes(q))return;
+D.forEach(d=>{if(!d.pk.toLowerCase().includes(q))return;
 if(!pkGroups[d.pk])pkGroups[d.pk]={transportista:d.trans,fecha:d.fec,items:{}};
 const k=d.prod;if(!pkGroups[d.pk].items[k])pkGroups[d.pk].items[k]={prod:d.prod,lot:d.lot,cant:0};
 pkGroups[d.pk].items[k].cant+=d.cant});
 const matches=Object.entries(pkGroups);
 if(matches.length===0){searchResults.innerHTML='<div class="em">No se encontraron packings con "'+searchPk.value.trim()+'"';return}
-searchResults.innerHTML='';matches.sort((a,b)=>a[0].localeCompare(b[0])).forEach(([pk,info])=>{
-const items=Object.values(info.items);
-const total=items.reduce((s,i)=>s+i.cant,0);
-const prods=items.map(i=>i.prod+' ('+i.cant.toLocaleString()+')').join(', ');
-const c=document.createElement('div');c.className='pc';c.style.cursor='pointer';
-c.innerHTML=`<div class="pn" style="background:linear-gradient(135deg,var(--ok),#059669)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:16px;height:16px"><polyline points="20 6 9 17 4 12"/></svg></div><div class="pi"><div class="pna">${pk}</div><div class="pq">${info.transportista} | ${info.fecha}</div><div class="pq" style="margin-top:4px;font-size:11px;line-height:1.4">${items.map(i=>`${i.prod} · Lote ${i.lot} · <b>${i.cant.toLocaleString()}</b>`).join('<br>')}</div><div class="pq" style="margin-top:4px;font-weight:700">Total: ${total.toLocaleString()} un.</div></div>`;
-c.addEventListener('click',()=>{scrSearch.classList.remove('on');fp.value=pk;fp.dispatchEvent(new Event('change'))});
-searchResults.appendChild(c)})});
+searchResults.innerHTML='';matches.sort((a,b)=>a[0].localeCompare(b[0])).forEach(([pk,info])=>renderSearchMatch(pk,info))});
+
+searchCant.addEventListener('input',()=>{
+const cant=parseInt(searchCant.value);
+if(!cant){searchResults.innerHTML='<div class="em">Escribe la cantidad para buscar</div>';return}
+const pkGroups={};
+D.forEach(d=>{if(!pkGroups[d.pk])pkGroups[d.pk]={transportista:d.trans,fecha:d.fec,items:{}};
+const k=d.prod;if(!pkGroups[d.pk].items[k])pkGroups[d.pk].items[k]={prod:d.prod,lot:d.lot,cant:0};
+pkGroups[d.pk].items[k].cant+=d.cant});
+const matches=[];
+Object.entries(pkGroups).forEach(([pk,info])=>{
+Object.values(info.items).forEach(item=>{if(item.cant===cant)matches.push({pk,info})})});
+if(matches.length===0){searchResults.innerHTML='<div class="em">No se encontraron packings con cantidad '+cant.toLocaleString()+'</div>';return}
+searchResults.innerHTML='';matches.forEach(m=>renderSearchMatch(m.pk,m.info))});
 </script>
 </body>
 </html>
