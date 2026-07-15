@@ -1,9 +1,9 @@
 ﻿{
-  "name": "Visor de Lotes",
+  "name": "Lotes Preview",
   "short_name": "Lotes",
   "description": "Visor y organizador de lotes por packing list",
-  "start_url": "/VISOR-DE-LOTES-/visor-lotes.html",
-  "scope": "/VISOR-DE-LOTES-/",
+  "start_url": "/LOTES-PREVIEW/",
+  "scope": "/LOTES-PREVIEW/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f172a",
