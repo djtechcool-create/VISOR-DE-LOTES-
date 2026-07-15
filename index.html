@@ -375,7 +375,8 @@ Object.entries(pkGroups).forEach(([pk,info])=>{
 Object.values(info.products).forEach(prod=>{
 Object.values(prod.lots).forEach(lotInfo=>{
 if(lotInfo.cant===cant){
-matches.push({pk,transportista:info.transportista,fecha:info.fecha,prod:prod.prod,lot:lotInfo.lot,cant:lotInfo.cant}})})})});
+matches.push({pk,transportista:info.transportista,fecha:info.fecha,prod:prod.prod,lot:lotInfo.lot,cant:lotInfo.cant})
+}})})});
 if(matches.length===0){searchResults.innerHTML='<div class="em">No se encontraron packings con cantidad '+cant.toLocaleString()+'</div>';return}
 searchResults.innerHTML='';matches.forEach(m=>{
 const c=document.createElement('div');c.className='pc';c.style.cursor='pointer';
