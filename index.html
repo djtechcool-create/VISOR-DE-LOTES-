@@ -82,7 +82,9 @@ header h1{flex:1;font-size:17px;font-weight:700;letter-spacing:-.3px}
 .rc.no-pack .rna{color:var(--cts)}
 .rg{color:var(--cb);flex-shrink:0;display:flex;flex-direction:column;gap:1px}
 .rg svg{width:18px;height:18px}
-.rn{width:26px;height:26px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0}
+.rn{width:26px;height:26px;background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0;cursor:pointer;position:relative}
+.rn:active{transform:scale(.9)}
+.rn-inp{width:26px;height:26px;text-align:center;border:none;border-radius:7px;background:#fff;color:var(--pri);font-weight:700;font-size:11px;outline:none;box-shadow:0 0 0 2px var(--acc)}
 .ri{flex:1;min-width:0}
 .rna{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ct)}
 .rl2{font-size:11px;color:var(--cts);margin-top:2px}
@@ -138,7 +140,7 @@ header h1{flex:1;font-size:17px;font-weight:700;letter-spacing:-.3px}
 <h1>Reordenar</h1>
 <button id="btn-rst" class="ib" title="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
 </header>
-<p class="rh">Mantén presionado y arrastra para cambiar el orden</p>
+<p class="rh">Toca el número para escribir la posición • Arrastra para mover</p>
 <div id="rlist" class="rl"></div>
 <div class="rf"><button id="btn-done" class="bar pr fw">Listo</button></div>
 </div>
@@ -312,7 +314,22 @@ orderedItems=[...allProducts]}
 orderedItems.forEach((i,x)=>{
 const inPack=currentKeys.has(`${i.cod}||${i.lot}`);
 const c=document.createElement('div');c.className='rc'+(inPack?'':' no-pack');c.draggable=true;c.dataset.key=`${i.cod}||${i.lot}`;
-c.innerHTML=`<div class="rg"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="4" r="2"/><circle cx="16" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="20" r="2"/><circle cx="16" cy="20" r="2"/></svg></div><div class="rn">${x+1}</div><div class="ri"><div class="rna">${i.prod}</div><div class="rl2">${inPack?'Cant: <b>'+i.cant.toLocaleString()+'</b>':'<span style="color:#ef4444">No este packing</span>'}</div></div><div class="rq">${i.lot}</div>`;
+c.innerHTML=`<div class="rg"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="4" r="2"/><circle cx="16" cy="4" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="12" r="2"/><circle cx="8" cy="20" r="2"/><circle cx="16" cy="20" r="2"/></svg></div><div class="rn" data-pos="${x}">${x+1}</div><div class="ri"><div class="rna">${i.prod}</div><div class="rl2">${inPack?'Cant: <b>'+i.cant.toLocaleString()+'</b>':'<span style="color:#ef4444">No este packing</span>'}</div></div><div class="rq">${i.lot}</div>`;
+const rn=c.querySelector('.rn');
+rn.addEventListener('click',e=>{
+e.stopPropagation();c.draggable=false;
+const inp=document.createElement('input');inp.type='number';inp.inputMode='numeric';inp.className='rn-inp';inp.value=parseInt(rn.dataset.pos)+1;inp.min=1;inp.max=allProducts.length;
+rn.replaceWith(inp);inp.focus();inp.select();
+function commit(){
+const newPos=parseInt(inp.value)||0;
+const num=allProducts.length;
+const clamp=Math.max(1,Math.min(num,newPos));
+const fromKey=c.dataset.key;
+const fromIdx=allProducts.findIndex(i=>`${i.cod}||${i.lot}`===fromKey);
+if(fromIdx!==-1&&clamp-1!==fromIdx){const item=allProducts.splice(fromIdx,1)[0];allProducts.splice(clamp-1,0,item);savedOrder=allProducts.map(i=>`${i.cod}||${i.lot}`);localStorage.setItem(LS_KEY,JSON.stringify(savedOrder));rRL()}else{const rn2=document.createElement('div');rn2.className='rn';rn2.dataset.pos=clamp-1;rn2.textContent=clamp;inp.replaceWith(rn2)}}
+inp.addEventListener('blur',commit);
+inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();commit()}if(ev.key==='Escape'){const rn2=document.createElement('div');rn2.className='rn';rn2.dataset.pos=parseInt(rn.dataset.pos);rn2.textContent=parseInt(rn.dataset.pos)+1;inp.replaceWith(rn2)}});
+});
 rlist.appendChild(c)});sTD()}
 
 function sTD(){
