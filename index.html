@@ -157,6 +157,7 @@ header h1{flex:1;font-size:17px;font-weight:700;letter-spacing:-.3px}
 <div style="padding:10px 12px;background:var(--c);border-bottom:1px solid var(--cb);flex-shrink:0;display:flex;gap:4px;transition:background .3s">
 <button id="tab-pk" class="bar pr" style="flex:1;font-size:12px;padding:10px 4px">Por Número</button>
 <button id="tab-cant" class="bar" style="flex:1;font-size:12px;padding:10px 4px">Por Cantidad</button>
+<button id="tab-ref" class="bar" style="flex:1;font-size:12px;padding:10px 4px">Por Referencia</button>
 </div>
 <div id="search-form-pk" style="padding:12px;background:var(--c);border-bottom:1px solid var(--cb);flex-shrink:0;transition:background .3s">
 <label style="font-size:12px;font-weight:600;color:var(--cts);display:block;margin-bottom:6px">Número de packing</label>
@@ -165,6 +166,10 @@ header h1{flex:1;font-size:17px;font-weight:700;letter-spacing:-.3px}
 <div id="search-form-cant" style="padding:12px;background:var(--c);border-bottom:1px solid var(--cb);flex-shrink:0;display:none;transition:background .3s">
 <label style="font-size:12px;font-weight:600;color:var(--cts);display:block;margin-bottom:6px">Cantidad</label>
 <input id="search-cant" type="number" inputmode="numeric" placeholder="Escribe la cantidad..." style="width:100%;padding:10px 8px;border:1.5px solid var(--cb);border-radius:8px;font-size:14px;background:var(--bg);color:var(--ct);transition:background .3s">
+</div>
+<div id="search-form-ref" style="padding:12px;background:var(--c);border-bottom:1px solid var(--cb);flex-shrink:0;display:none;transition:background .3s">
+<label style="font-size:12px;font-weight:600;color:var(--cts);display:block;margin-bottom:6px">Referencia</label>
+<input id="search-ref" type="text" inputmode="search" placeholder="Escribe la referencia..." style="width:100%;padding:10px 8px;border:1.5px solid var(--cb);border-radius:8px;font-size:14px;background:var(--bg);color:var(--ct);transition:background .3s">
 </div>
 <div id="search-results" class="pl"></div>
 </div>
@@ -232,7 +237,8 @@ if(hl==='producto'||hl==='nombre producto')cm.prod=i;
 if(hl==='lote')cm.lot=i;
 if(hl==='cantidad')cm.cant=i;
 if(hl.includes('escuela')||hl.includes('amie'))cm.esc=i;
-if(hl.includes('ruta')||hl.includes('destino'))cm.rut=i});
+if(hl.includes('ruta')||hl.includes('destino'))cm.rut=i;
+if(hl.includes('referencia')||hl==='ref')cm.ref=i});
 D=[];
 for(let i=hi+1;i<js.length;i++){
 const row=js[i];if(!row||row.every(c=>c===null||c===undefined||c===''))continue;
@@ -245,7 +251,8 @@ prod:cm.prod!==undefined?String(row[cm.prod]||'').trim():'',
 lot:cm.lot!==undefined?String(row[cm.lot]||'').trim():'-',
 cant:cm.cant!==undefined?Number(row[cm.cant])||0:0,
 esc:cm.esc!==undefined?String(row[cm.esc]||'').trim():'',
-rut:cm.rut!==undefined?String(row[cm.rut]||'').trim():''})}
+rut:cm.rut!==undefined?String(row[cm.rut]||'').trim():'',
+ref:cm.ref!==undefined?String(row[cm.ref]||'').trim():''})}
 if(!D.length)throw new Error('No se encontraron datos válidos');
 const allG={};D.forEach(d=>{const k=d.cod;if(!allG[k])allG[k]={...d,cant:0};allG[k].cant+=d.cant;allG[k].lot=d.lot});
 allProducts=Object.values(allG);
@@ -374,18 +381,21 @@ function cT(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.
 function tS(m){tst.textContent=m;tst.classList.remove('h');clearTimeout(tst._t);tst._t=setTimeout(()=>tst.classList.add('h'),1800)}
 
 // SEARCH
-const scrSearch=$('scr-search'),searchPk=$('search-pk'),searchCant=$('search-cant'),searchResults=$('search-results');
-const tabPk=$('tab-pk'),tabCant=$('tab-cant'),formPk=$('search-form-pk'),formCant=$('search-form-cant');
+const scrSearch=$('scr-search'),searchPk=$('search-pk'),searchCant=$('search-cant'),searchRef=$('search-ref'),searchResults=$('search-results');
+const tabPk=$('tab-pk'),tabCant=$('tab-cant'),tabRef=$('tab-ref'),formPk=$('search-form-pk'),formCant=$('search-form-cant'),formRef=$('search-form-ref');
 let searchMode='pk';
 function showSearchForm(mode){
 searchMode=mode;
 tabPk.className=mode==='pk'?'bar pr':'bar';
 tabCant.className=mode==='cant'?'bar pr':'bar';
+tabRef.className=mode==='ref'?'bar pr':'bar';
 formPk.style.display=mode==='pk'?'block':'none';
 formCant.style.display=mode==='cant'?'block':'none';
-searchResults.innerHTML='<div class="em">'+(mode==='pk'?'Escribe el número del packing':'Escribe la cantidad para buscar')+'</div>';}
+formRef.style.display=mode==='ref'?'block':'none';
+searchResults.innerHTML='<div class="em">'+(mode==='pk'?'Escribe el número del packing':mode==='cant'?'Escribe la cantidad para buscar':'Escribe la referencia')+'</div>';}
 tabPk.addEventListener('click',()=>{showSearchForm('pk');searchPk.focus()});
 tabCant.addEventListener('click',()=>{showSearchForm('cant');searchCant.focus()});
+tabRef.addEventListener('click',()=>{showSearchForm('ref');searchRef.focus()});
 
 function renderSearchMatch(pk,info){
 const items=Object.values(info.items);
@@ -397,7 +407,7 @@ searchResults.appendChild(c)}
 
 $('btn-search').addEventListener('click',()=>{
 if(!D.length){tS('Carga un Excel primero');return}
-searchPk.value='';searchCant.value='';showSearchForm('pk');
+searchPk.value='';searchCant.value='';searchRef.value='';showSearchForm('pk');
 scrSearch.classList.add('on');searchPk.focus()});
 $('btn-close-search').addEventListener('click',()=>{scrSearch.classList.remove('on')});
 
@@ -425,6 +435,18 @@ Object.entries(pkGroups).forEach(([pk,info])=>{
 Object.values(info.items).forEach(item=>{if(item.cant===cant)matches.push({pk,info})})});
 if(matches.length===0){searchResults.innerHTML='<div class="em">No se encontraron packings con cantidad '+cant.toLocaleString()+'</div>';return}
 searchResults.innerHTML='';matches.forEach(m=>renderSearchMatch(m.pk,m.info))});
+
+searchRef.addEventListener('input',()=>{
+const q=searchRef.value.trim().toLowerCase();
+if(!q){searchResults.innerHTML='<div class="em">Escribe la referencia</div>';return}
+const pkGroups={};
+D.forEach(d=>{if(!d.ref||!d.ref.toLowerCase().includes(q))return;
+if(!pkGroups[d.pk])pkGroups[d.pk]={transportista:d.trans,fecha:d.fec,items:{}};
+const k=d.prod;if(!pkGroups[d.pk].items[k])pkGroups[d.pk].items[k]={prod:d.prod,lot:d.lot,cant:0};
+pkGroups[d.pk].items[k].cant+=d.cant});
+const matches=Object.entries(pkGroups);
+if(matches.length===0){searchResults.innerHTML='<div class="em">No se encontraron packings con referencia "'+searchRef.value.trim()+'"';return}
+searchResults.innerHTML='';matches.sort((a,b)=>a[0].localeCompare(b[0])).forEach(([pk,info])=>renderSearchMatch(pk,info))});
 </script>
 </body>
 </html>
